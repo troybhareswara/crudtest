@@ -9,10 +9,13 @@ export async function GET() {
   try {
     const [rows] = await db.query('SELECT * FROM users ORDER BY id DESC');
     return NextResponse.json(rows);
-  } catch (error) {
+  } catch (error: any) {
     console.error('Database Error:', error);
     return NextResponse.json(
-      { message: 'Gagal mengambil data dari database' },
+      { 
+        message: 'Gagal mengambil data dari database',
+        detail: error?.message || String(error)
+      },
       { status: 500 }
     );
   }
@@ -52,9 +55,18 @@ export async function POST(request: Request) {
     );
 
     return NextResponse.json({ message: 'Data berhasil disimpan' }, { status: 201 });
-  } catch (error) {
+  } catch (error: any) {
     console.error('POST Error:', error);
-    return NextResponse.json({ message: 'Gagal menyimpan data ke database' }, { status: 500 });
+    
+    // Kembalikan detail error ke browser agar langsung tau letak masalahnya
+    return NextResponse.json(
+      { 
+        message: 'Gagal menyimpan data ke database',
+        detail: error?.message || String(error),
+        code: error?.code || 'UNKNOWN_ERROR'
+      },
+      { status: 500 }
+    );
   }
 }
 
@@ -86,8 +98,14 @@ export async function DELETE(request: Request) {
     await db.query('DELETE FROM users WHERE id = ?', [id]);
 
     return NextResponse.json({ message: 'Data berhasil dihapus' });
-  } catch (error) {
+  } catch (error: any) {
     console.error('DELETE Error:', error);
-    return NextResponse.json({ message: 'Gagal menghapus data' }, { status: 500 });
+    return NextResponse.json(
+      { 
+        message: 'Gagal menghapus data',
+        detail: error?.message || String(error)
+      }, 
+      { status: 500 }
+    );
   }
 }
