@@ -11,14 +11,19 @@ type UserData = {
   created_at?: string;
 };
 
+// Inline SVG icons
+const UserIcon = () => (
+  <svg width="52" height="52" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+    <circle cx="12" cy="7" r="4"/>
+  </svg>
+);
+
 export default function HomePage() {
   const [users, setUsers] = useState<UserData[]>([]);
-  const [nama, setNama] = useState('');
-  const [umur, setUmur] = useState('');
-  const [tinggi, setTinggi] = useState('');
-  const [foto, setFoto] = useState<File | null>(null);
   const [loading, setLoading] = useState(false);
-  const [deletingId, setDeletingId] = useState<number | null>(null);
+  const [form, setForm] = useState({ nama: '', umur: '', tinggi: '' });
+  const [foto, setFoto] = useState<File | null>(null);
 
   const fetchUsers = async () => {
     try {
@@ -34,22 +39,20 @@ export default function HomePage() {
     fetchUsers();
   }, []);
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.SyntheticEvent) => {
     e.preventDefault();
     setLoading(true);
 
     const formData = new FormData();
-    formData.append('nama', nama);
-    formData.append('umur', umur);
-    formData.append('tinggi', tinggi);
+    formData.append('nama', form.nama);
+    formData.append('umur', form.umur);
+    formData.append('tinggi', form.tinggi);
     if (foto) formData.append('foto', foto);
 
     try {
       const res = await fetch('/api/users', { method: 'POST', body: formData });
       if (res.ok) {
-        setNama('');
-        setUmur('');
-        setTinggi('');
+        setForm({ nama: '', umur: '', tinggi: '' });
         setFoto(null);
         (document.getElementById('fotoInput') as HTMLInputElement).value = '';
         fetchUsers();
@@ -61,128 +64,141 @@ export default function HomePage() {
     }
   };
 
-  const handleDelete = async (id: number) => {
-    if (!confirm('Yakin ingin menghapus data ini?')) return;
-    setDeletingId(id);
-    try {
-      const res = await fetch(`/api/users?id=${id}`, { method: 'DELETE' });
-      if (res.ok) fetchUsers();
-    } catch (err) {
-      console.error(err);
-    } finally {
-      setDeletingId(null);
-    }
-  };
-
   return (
-    <div className="min-h-screen bg-white text-gray-900 font-sans">
-      <div className="max-w-2xl mx-auto px-4 py-10">
-        <h1 className="text-2xl font-bold text-center mb-6">Input Data Diri</h1>
+    <div className="page-wrap">
+      {/* Header */}
+      <header className="page-header">
+        <p className="eyebrow">Formulir Entry</p>
+        <h1 className="page-title">
+          Data<em>&nbsp;Diri</em>
+        </h1>
+        <p className="page-subtitle">
+          Catat informasi pribadi ke dalam sistem database.
+        </p>
+      </header>
 
-        {/* Form */}
-        <form onSubmit={handleSubmit} className="card">
-          <div className="flex flex-col gap-4">
+      {/* Form card */}
+      <form onSubmit={handleSubmit} className="card">
+        <div className="form-grid">
+          {/* Nama — full width */}
+          <div className="form-group">
+            <label className="form-label">Nama Lengkap</label>
+            <input
+              type="text"
+              placeholder="Masukkan nama lengkap"
+              value={form.nama}
+              onChange={(e) => setForm({ ...form, nama: e.target.value })}
+              required
+              className="form-input"
+            />
+          </div>
+
+          {/* Umur & Tinggi — side by side */}
+          <div className="form-row">
             <div className="form-group">
-              <label className="form-label">Nama Lengkap</label>
+              <label className="form-label">Umur</label>
+              <input
+                type="number"
+                placeholder="Contoh: 25"
+                min="1"
+                value={form.umur}
+                onChange={(e) => setForm({ ...form, umur: e.target.value })}
+                required
+                className="form-input"
+              />
+            </div>
+
+            <div className="form-group">
+              <label className="form-label">Tinggi (cm)</label>
+              <input
+                type="number"
+                placeholder="Contoh: 170"
+                min="1"
+                value={form.tinggi}
+                onChange={(e) => setForm({ ...form, tinggi: e.target.value })}
+                required
+                className="form-input"
+              />
+            </div>
+          </div>
+
+          {/* Foto */}
+          <div className="form-group">
+            <label className="form-label">Foto Diri</label>
+            <div className="file-wrapper">
               <input
                 id="fotoInput"
-                type="text"
-                placeholder="Masukkan Nama"
-                value={nama}
-                onChange={(e) => setNama(e.target.value)}
-                required
-                className="form-input"
-              />
-            </div>
-
-            <div className="form-group">
-              <label className="form-label">Umur (Tahun)</label>
-              <input
-                type="number"
-                placeholder="Masukkan Umur"
-                value={umur}
-                onChange={(e) => setUmur(e.target.value)}
-                required
-                className="form-input"
-              />
-            </div>
-
-            <div className="form-group">
-              <label className="form-label">Tinggi Badan (cm)</label>
-              <input
-                type="number"
-                placeholder="Masukkan Tinggi Badan"
-                value={tinggi}
-                onChange={(e) => setTinggi(e.target.value)}
-                required
-                className="form-input"
-              />
-            </div>
-
-            <div className="form-group">
-              <label className="form-label">Foto Diri</label>
-              <input
                 type="file"
                 accept="image/*"
                 onChange={(e) => setFoto(e.target.files?.[0] ?? null)}
-                className="form-input file:mr-3 file:py-1 file:px-3 file:rounded file:border-0 file:text-sm file:bg-blue-50 file:text-blue-600 file:cursor-pointer"
+                className="form-input"
               />
             </div>
-
-            <button type="submit" disabled={loading} className="btn-primary">
-              {loading ? 'Menyimpan...' : 'Simpan Data Diri'}
-            </button>
           </div>
-        </form>
-
-        {/* Table */}
-        <h2 className="text-xl font-semibold mb-3">Daftar Data Diri (db_crudtest)</h2>
-        <div className="overflow-x-auto border border-gray-200 rounded-lg">
-          <table className="data-table">
-            <thead>
-              <tr>
-                <th className="w-20">Foto</th>
-                <th>Nama</th>
-                <th>Umur</th>
-                <th>Tinggi</th>
-                <th className="w-20">Aksi</th>
-              </tr>
-            </thead>
-            <tbody>
-              {users.length === 0 ? (
-                <tr>
-                  <td colSpan={5} className="text-center py-4 text-gray-500">
-                    Belum ada data / Loading...
-                  </td>
-                </tr>
-              ) : (
-                users.map((item) => (
-                  <tr key={item.id} className="hover:bg-gray-50">
-                    <td className="text-center">
-                      {item.foto ? (
-                        <img src={item.foto} alt={item.nama} className="avatar mx-auto" />
-                      ) : (
-                        <span className="avatar-placeholder">No Image</span>
-                      )}
-                    </td>
-                    <td className="font-medium">{item.nama}</td>
-                    <td>{item.umur} Tahun</td>
-                    <td>{item.tinggi} cm</td>
-                    <td>
-                      <button
-                        onClick={() => handleDelete(item.id)}
-                        disabled={deletingId === item.id}
-                        className="px-3 py-1 text-sm bg-red-500 text-white rounded hover:bg-red-600 disabled:bg-gray-400 transition"
-                      >
-                        {deletingId === item.id ? '...' : 'Hapus'}
-                      </button>
-                    </td>
-                  </tr>
-                ))
-              )}
-            </tbody>
-          </table>
         </div>
+
+        <button type="submit" disabled={loading} className="btn-submit">
+          <span>{loading ? 'Menyimpan...' : 'Simpan Data Diri'}</span>
+        </button>
+      </form>
+
+      {/* Divider */}
+      <div className="divider">
+        <div className="divider-line" />
+        <span className="divider-text">{users.length} Entri</span>
+        <div className="divider-line" />
+      </div>
+
+      {/* Stats bar */}
+      {users.length > 0 && (
+        <div className="stats-bar">
+          <span className="stat-item">Total <strong>{users.length}</strong></span>
+          <div className="stat-dot" />
+          <span className="stat-item">Rata-rata Umur <strong>{Math.round(users.reduce((s, u) => s + u.umur, 0) / users.length)} thn</strong></span>
+          <div className="stat-dot" />
+          <span className="stat-item">Rata-rata Tinggi <strong>{Math.round(users.reduce((s, u) => s + u.tinggi, 0) / users.length)} cm</strong></span>
+        </div>
+      )}
+
+      {/* Table */}
+      <div className="table-wrap">
+        <table className="data-table">
+          <thead>
+            <tr>
+              <th style={{ width: 56 }}></th>
+              <th>Nama</th>
+              <th>Umur</th>
+              <th>Tinggi</th>
+            </tr>
+          </thead>
+          <tbody>
+            {users.length === 0 ? (
+              <tr>
+                <td colSpan={4}>
+                  <div className="empty-state">
+                    <UserIcon />
+                    <p>Belum ada data. Isi formulir di atas untuk menambahkan.</p>
+                  </div>
+                </td>
+              </tr>
+            ) : (
+              users.map((item) => (
+                <tr key={item.id}>
+                  <td>
+                    {item.foto ? (
+                      <img src={item.foto} alt={item.nama} className="avatar" />
+                    ) : (
+                      <div className="avatar-placeholder">IMG</div>
+                    )}
+                  </td>
+                  <td className="name-cell">{item.nama}</td>
+                  <td className="meta-cell">{item.umur} thn</td>
+                  <td className="meta-cell">{item.tinggi} cm</td>
+                </tr>
+              ))
+            )}
+          </tbody>
+        </table>
       </div>
     </div>
   );
